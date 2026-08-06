@@ -1,0 +1,22 @@
+# Archivos de variables de entorno y credenciales (NUNCA subir a Git)
+.env
+.env.local
+*.env
+
+# Entorno virtual de Python
+venv/
+env/
+ENV/
+
+# Archivos de caché y compilación de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Archivos temporales e IDEs
+.vscode/
+.idea/
+*.log
+.DS_Store

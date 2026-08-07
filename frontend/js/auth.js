@@ -47,7 +47,7 @@ export function setupAuth(onSuccess) {
             formData.append('username', email);
             formData.append('password', password);
 
-            const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+            const response = await fetch('https://taskify-api-z3wn.onrender.com/api/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData

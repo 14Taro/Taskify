@@ -12,15 +12,18 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Taskify API",
     description="API RESTful para la gestión de tareas personales multi-dispositivo",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False  # Evita redirecciones 307 que pueden perder cabeceras CORS
 )
 
+# Configuración explícita de CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Registrar Routers

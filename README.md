@@ -126,3 +126,34 @@ Soporte para Modo Oscuro y Modo Claro (Dark/Light mode) con persistencia de pref
 Con el servidor en ejecución, la documentación interactiva OpenAPI está disponible en el navegador en:
 
     Swagger UI: http://localhost:8000/docs
+
+# 🚀 Actualización v1.0.1: Mejoras de UX y Seguridad
+
+Esta actualización se centró en mejorar significativamente la experiencia del usuario (UX) mediante transiciones más fluidas y personalización, además de blindar la API contra ataques de fuerza bruta. El desarrollo se gestionó mediante 5 tickets incrementales.
+
+### 📋 Registro de Tickets (Sprints Completados)
+
+#### ✅ Ticket 1.1: [Frontend] Persistencia de Email ("Recordar Usuario")
+* **Descripción:** Implementación de un checkbox en el login para recordar el correo del usuario utilizando `localStorage`, agilizando futuros inicios de sesión.
+* **Impacto:** Modificación de `index.html` y `auth.js` para lectura/escritura de credenciales locales.
+
+#### ✅ Ticket 1.2: [Frontend/UX] Eliminación de Parpadeo Visual (Flicker) al Refrescar
+* **Descripción:** Corrección del ciclo de renderizado. Ahora las secciones inician ocultas por defecto y un *Global Loader* (spinner) cubre la pantalla mientras se verifica la validez del JWT, evitando que el usuario vea la pantalla de login por fracciones de segundo.
+* **Impacto:** Modificación estructural en `index.html` (clases `hidden` y contenedor z-index) y lógica de inicialización en `main.js`.
+
+#### ✅ Ticket 1.3: [Fullstack] Filtro y Agrupación por Prioridad de Tareas
+* **Descripción:** Capacidad de ordenar y filtrar tareas visualmente según su urgencia (ALTA, MEDIA, BAJA).
+* **Backend:** Implementación de `case` en SQLAlchemy (`tasks.py`) para ordenar la respuesta JSON de forma jerárquica desde la base de datos.
+* **Frontend:** Creación de un menú `<select>` en el Dashboard y lógica en `tasks.js` para filtrar dinámicamente el array local en memoria sin recargar la página.
+
+#### ✅ Ticket 1.4: [Fullstack] Alias de Usuario Personalizado
+* **Descripción:** Inclusión de un nombre de usuario / alias para personalizar el saludo en el Dashboard, reemplazando el uso del correo electrónico crudo.
+* **Backend:** Nueva columna `alias` en la tabla `users` (PostgreSQL), y actualización de Pydantic schemas para exigir el dato en el registro.
+* **Frontend:** Refactorización del formulario de registro y actualización del Header del Dashboard. Centralización de peticiones mediante exportación dinámica de `API_BASE_URL`.
+
+#### ✅ Ticket 1.5: [Backend] Prevención de Fuerza Bruta (Rate Limiting)
+* **Descripción:** Sistema de seguridad de base de datos para prevenir intentos ilimitados de inicio de sesión.
+* **Lógica implementada:** * Se añadieron las columnas `failed_login_attempts` y `lockout_until` en la base de datos.
+  * Al errar la contraseña, el servidor retorna los intentos restantes (Ej: *"¡ATENCIÓN! Te queda 1 solo intento..."*).
+  * Al fallar 5 veces, el sistema bloquea al usuario por 24 horas respondiendo con código `HTTP 403 Forbidden`.
+* **Impacto:** Modificaciones directas en `models.py` y `auth.py`.

@@ -1,5 +1,8 @@
 import { apiFetch } from './api.js';
 
+// TICKET 1.3: Variable global para guardar las tareas pendientes y poder filtrarlas sin llamar a la API
+let currentPendingTasks = [];
+
 export async function loadTasks() {
     try {
         const [pendingTasks, historyTasks] = await Promise.all([
@@ -7,11 +10,25 @@ export async function loadTasks() {
             apiFetch('/tasks/history')
         ]);
 
-        renderPendingTasks(pendingTasks);
+        currentPendingTasks = pendingTasks;
+        applyFilterAndRender(); // Renderiza aplicando el filtro actual seleccionado
         renderHistoryTasks(historyTasks);
     } catch (error) {
         console.error('Error al cargar tareas:', error);
     }
+}
+
+// TICKET 1.3: Nueva función para filtrar y mostrar instantáneamente
+function applyFilterAndRender() {
+    const filterSelect = document.getElementById('task-filter');
+    const filterValue = filterSelect ? filterSelect.value : 'TODAS';
+
+    let filteredTasks = currentPendingTasks;
+    if (filterValue !== 'TODAS') {
+        filteredTasks = currentPendingTasks.filter(task => task.priority === filterValue);
+    }
+
+    renderPendingTasks(filteredTasks);
 }
 
 function renderPendingTasks(tasks) {
@@ -20,7 +37,7 @@ function renderPendingTasks(tasks) {
     count.textContent = tasks.length;
 
     if (tasks.length === 0) {
-        list.innerHTML = `<li class="text-gray-400 dark:text-gray-500 text-sm text-center py-4">No hay tareas pendientes. ¡Buen trabajo! 🎉</li>`;
+        list.innerHTML = `<li class="text-gray-400 dark:text-gray-500 text-sm text-center py-4">No hay tareas con este filtro. ¡Buen trabajo! 🎉</li>`;
         return;
     }
 
@@ -85,28 +102,36 @@ async function completeTask(taskId) {
 
 export function setupTaskForm() {
     const form = document.getElementById('create-task-form');
-    if (!form) return;
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const titleInput = document.getElementById('task-title');
+            const priorityInput = document.getElementById('task-priority');
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const titleInput = document.getElementById('task-title');
-        const priorityInput = document.getElementById('task-priority');
+            const title = titleInput.value.trim();
+            const priority = priorityInput.value;
 
-        const title = titleInput.value.trim();
-        const priority = priorityInput.value;
+            if (!title) return;
 
-        if (!title) return;
+            try {
+                await apiFetch('/tasks', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, priority })
+                });
 
-        try {
-            await apiFetch('/tasks', {
-                method: 'POST',
-                body: JSON.stringify({ title, priority })
-            });
+                titleInput.value = '';
+                await loadTasks();
+            } catch (error) {
+                alert('Error al crear la tarea.');
+            }
+        });
+    }
 
-            titleInput.value = '';
-            await loadTasks();
-        } catch (error) {
-            alert('Error al crear la tarea.');
-        }
-    });
+    // TICKET 1.3: Conectar el selector de filtro con la función de renderizado
+    const filterSelect = document.getElementById('task-filter');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            applyFilterAndRender();
+        });
+    }
 }

@@ -14,7 +14,13 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
+    alias = Column(String(30), nullable=True) 
     password_hash = Column(String(255), nullable=False)
+    
+    # TICKET 1.5: Columnas de seguridad para Rate Limiting
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    lockout_until = Column(DateTime(timezone=True), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relación con las tareas

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
 import jwt
 
 from app.database import get_db
@@ -14,7 +15,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Verificar si el usuario ya existe
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
@@ -22,9 +22,8 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
             detail="El correo electrónico ya está registrado."
         )
     
-    # Crear nuevo usuario con password encriptado
     hashed_pwd = security.hash_password(user_data.password)
-    new_user = User(email=user_data.email, password_hash=hashed_pwd)
+    new_user = User(email=user_data.email, alias=user_data.alias, password_hash=hashed_pwd)
     
     db.add(new_user)
     db.commit()
@@ -35,17 +34,55 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
     
-    if not user or not security.verify_password(form_data.password, user.password_hash):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales incorrectas."
+            detail="Credenciales incorrectas o usuario no encontrado."
+        )
+        
+    ahora = datetime.now(timezone.utc)
+    # Si la cuenta ya está bloqueada y todavía no pasó el tiempo
+    if user.lockout_until and user.lockout_until > ahora:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta está bloqueada por 24 horas. Intenta más tarde."
+        )
+
+    # Si la contraseña es incorrecta
+    if not security.verify_password(form_data.password, user.password_hash):
+        user.failed_login_attempts += 1
+        
+        # Bloqueo en el quinto fallo
+        if user.failed_login_attempts >= 5:
+            user.lockout_until = ahora + timedelta(hours=24)
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Has fallado 5 veces. Tu cuenta ha sido bloqueada por 24 horas por seguridad."
+            )
+            
+        db.commit()
+        
+        # Mensajes personalizados según intentos restantes
+        intentos_restantes = 5 - user.failed_login_attempts
+        if intentos_restantes == 1:
+            mensaje = "Credenciales incorrectas. ¡ATENCIÓN! Te queda 1 solo intento antes de que tu cuenta se bloquee por 24 horas."
+        else:
+            mensaje = f"Credenciales incorrectas. Te quedan {intentos_restantes} intentos."
+            
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=mensaje
         )
     
-    # Generar token JWT
+    # Contraseña correcta -> Reinicio de seguridad
+    user.failed_login_attempts = 0
+    user.lockout_until = None
+    db.commit()
+
     token = security.create_access_token(data={"sub": str(user.id), "email": user.email})
     return {"access_token": token, "token_type": "bearer"}
 
-# Dependencia para obtener el usuario autenticado actual
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

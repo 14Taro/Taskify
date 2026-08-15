@@ -7,10 +7,12 @@ from app.models import PriorityEnum
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    alias: str  # TICKET 1.4: Exigimos alias en el registro
 
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
+    alias: Optional[str] = None  # TICKET 1.4: Devolvemos el alias
     created_at: datetime
 
     class Config:
@@ -35,4 +37,4 @@ class TaskResponse(BaseModel):
     completed_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True  
+        from_attributes = True

@@ -12,7 +12,11 @@
 </head>
 <body class="bg-gray-100 dark:bg-slate-900 min-h-screen font-sans text-gray-800 dark:text-gray-100 transition-colors duration-300">
 
-    <div id="auth-section" class="flex items-center justify-center min-h-screen px-4">
+    <div id="global-loader" class="fixed inset-0 bg-gray-100 dark:bg-slate-900 z-50 flex items-center justify-center transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+    </div>
+
+    <div id="auth-section" class="hidden flex items-center justify-center min-h-screen px-4">
         <div class="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-md w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">🚀 Taskify</h1>
@@ -22,6 +26,12 @@
 
             <form id="login-form" class="space-y-4">
                 <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Iniciar Sesión</h2>
+                
+                <div id="register-alias-container" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alias / Nombre de Usuario</label>
+                    <input type="text" id="register-alias" placeholder="Ej: Lautaro" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                     <input type="email" id="login-email" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:border-gray-600 dark:text-white">
@@ -30,6 +40,12 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña</label>
                     <input type="password" id="login-password" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:border-gray-600 dark:text-white">
                 </div>
+                
+                <div class="flex items-center gap-2 mt-2" id="remember-me-container">
+                    <input type="checkbox" id="remember-email" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 dark:bg-slate-700 dark:border-gray-600">
+                    <label for="remember-email" class="text-sm text-gray-600 dark:text-gray-400">Recordar mi usuario</label>
+                </div>
+
                 <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Ingresar</button>
             </form>
 
@@ -47,8 +63,8 @@
                 <h1 class="text-2xl font-bold flex items-center gap-2">🚀 Taskify</h1>
                 <div class="flex items-center gap-3">
                     <button id="theme-toggle" class="p-1.5 rounded-lg bg-indigo-700 dark:bg-slate-700 hover:opacity-80 transition text-base">🌙</button>
-                    <span id="user-email-display" class="text-xs bg-indigo-700 dark:bg-slate-700 px-3 py-1 rounded-full"></span>
-                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition">Cerrar Sesión</button>
+                    <span id="user-email-display" class="text-sm font-semibold bg-indigo-700 dark:bg-slate-700 px-3 py-1 rounded-full shadow-inner"></span>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition shadow">Cerrar Sesión</button>
                 </div>
             </div>
         </header>
@@ -71,10 +87,18 @@
 
             <div class="grid md:grid-cols-2 gap-8">
                 <section class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 class="text-xl font-bold mb-4 flex items-center justify-between text-gray-800 dark:text-gray-100">
-                        <span>📋 Tareas Pendientes</span>
-                        <span id="pending-count" class="text-sm bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2.5 py-0.5 rounded-full">0</span>
-                    </h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                            <span>📋 Tareas Pendientes</span>
+                            <span id="pending-count" class="text-sm bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2.5 py-0.5 rounded-full">0</span>
+                        </h2>
+                        <select id="task-filter" class="p-1 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:bg-slate-700 dark:border-gray-600 dark:text-white cursor-pointer">
+                            <option value="TODAS">Todas</option>
+                            <option value="ALTA">Altas 🔴</option>
+                            <option value="MEDIA">Medias 🟡</option>
+                            <option value="BAJA">Bajas 🟢</option>
+                        </select>
+                    </div>
                     <ul id="pending-tasks-list" class="space-y-3"></ul>
                 </section>
 

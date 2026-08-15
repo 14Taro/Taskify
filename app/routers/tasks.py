@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import case
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -27,16 +28,28 @@ def create_task(
     db.refresh(new_task)
     return new_task
 
-# 2. Obtener tareas PENDIENTES del usuario actual
+# 2. Obtener tareas PENDIENTES del usuario actual (ORDENADAS POR PRIORIDAD)
 @router.get("", response_model=List[schemas.TaskResponse])
 def get_pending_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # TICKET 1.3: Asignar un valor numérico interno para ordenar las prioridades (ALTA=1, MEDIA=2, BAJA=3)
+    priority_order = case(
+        [
+            (Task.priority == "ALTA", 1),
+            (Task.priority == "MEDIA", 2),
+            (Task.priority == "BAJA", 3),
+        ],
+        else_=4
+    )
+
+    # Filtramos las no completadas y ordenamos por urgencia y luego por fecha de creación
     tasks = db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.is_completed == False
-    ).order_by(Task.created_at.desc()).all()
+    ).order_by(priority_order, Task.created_at.desc()).all()
+    
     return tasks
 
 # 3. Marcar tarea como COMPLETADA

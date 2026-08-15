@@ -8,21 +8,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardSection = document.getElementById('dashboard-section');
     const logoutBtn = document.getElementById('logout-btn');
     const userEmailDisplay = document.getElementById('user-email-display');
+    const globalLoader = document.getElementById('global-loader');
 
     setupTheme();
+
+    function hideLoader() {
+        if (globalLoader) {
+            globalLoader.classList.add('opacity-0');
+            setTimeout(() => globalLoader.classList.add('hidden'), 300);
+        }
+    }
 
     async function checkAuth() {
         const token = getToken();
         if (token) {
             try {
-                // Verificar que el token sea válido y obtener datos del usuario
                 const user = await apiFetch('/auth/me');
-                if (userEmailDisplay) userEmailDisplay.textContent = user.email;
+                
+                // TICKET 1.4: Si tiene alias, mostramos un saludo bonito. Si es una cuenta muy vieja y no tiene, mostramos el email.
+                if (userEmailDisplay) {
+                    userEmailDisplay.textContent = user.alias ? `Hola, ${user.alias} 👋` : user.email;
+                }
 
+                hideLoader();
                 authSection.classList.add('hidden');
                 dashboardSection.classList.remove('hidden');
 
-                // Cargar tareas pendientes e historial desde la API
                 await loadTasks();
             } catch (err) {
                 removeToken();
@@ -34,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showLogin() {
+        hideLoader();
         authSection.classList.remove('hidden');
         dashboardSection.classList.add('hidden');
     }

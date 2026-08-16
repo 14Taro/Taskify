@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from app.database import get_db
-from app.models import Task, User
+# FIX: Agregamos PriorityEnum a la importación
+from app.models import Task, User, PriorityEnum 
 from app import schemas
 from app.routers.auth import get_current_user
 
@@ -34,12 +35,12 @@ def get_pending_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # TICKET 1.3: Asignar un valor numérico interno para ordenar las prioridades (ALTA=1, MEDIA=2, BAJA=3)
+    # FIX: Reemplazamos los textos por los objetos PriorityEnum para evitar el error 500 en PostgreSQL
     priority_order = case(
         [
-            (Task.priority == "ALTA", 1),
-            (Task.priority == "MEDIA", 2),
-            (Task.priority == "BAJA", 3),
+            (Task.priority == PriorityEnum.ALTA, 1),
+            (Task.priority == PriorityEnum.MEDIA, 2),
+            (Task.priority == PriorityEnum.BAJA, 3),
         ],
         else_=4
     )

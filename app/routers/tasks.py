@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import case
 from datetime import datetime, timedelta, timezone
 from typing import List
 
 from app.database import get_db
-# FIX: Agregamos PriorityEnum a la importación
-from app.models import Task, User, PriorityEnum 
+from app.models import Task, User
 from app import schemas
 from app.routers.auth import get_current_user
 
@@ -29,27 +27,17 @@ def create_task(
     db.refresh(new_task)
     return new_task
 
-# 2. Obtener tareas PENDIENTES del usuario actual (ORDENADAS POR PRIORIDAD)
+# 2. Obtener tareas PENDIENTES del usuario actual
 @router.get("", response_model=List[schemas.TaskResponse])
 def get_pending_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # FIX: Reemplazamos los textos por los objetos PriorityEnum para evitar el error 500 en PostgreSQL
-    priority_order = case(
-        [
-            (Task.priority == PriorityEnum.ALTA, 1),
-            (Task.priority == PriorityEnum.MEDIA, 2),
-            (Task.priority == PriorityEnum.BAJA, 3),
-        ],
-        else_=4
-    )
-
-    # Filtramos las no completadas y ordenamos por urgencia y luego por fecha de creación
+    # SOLUCIÓN: Quitamos el 'case' problemático de PostgreSQL. Solo traemos las tareas ordenadas por fecha.
     tasks = db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.is_completed == False
-    ).order_by(priority_order, Task.created_at.desc()).all()
+    ).order_by(Task.created_at.desc()).all()
     
     return tasks
 
@@ -77,7 +65,7 @@ def complete_task(
     db.refresh(task)
     return task
 
-# 4. Consultar HISTORIAL de los últimos 30 días (y purgar las de más de 30 días)
+# 4. Consultar HISTORIAL
 @router.get("/history", response_model=List[schemas.TaskResponse])
 def get_task_history(
     db: Session = Depends(get_db),
@@ -85,7 +73,6 @@ def get_task_history(
 ):
     limite_30_dias = datetime.now(timezone.utc) - timedelta(days=30)
 
-    # Purga automática: Eliminar tareas completadas de más de 30 días
     db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.is_completed == True,
@@ -93,7 +80,6 @@ def get_task_history(
     ).delete(synchronize_session=False)
     db.commit()
 
-    # Obtener historial válido de los últimos 30 días
     history_tasks = db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.is_completed == True,

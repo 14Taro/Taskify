@@ -1,6 +1,5 @@
 import { apiFetch } from './api.js';
 
-// TICKET 1.3: Variable global para guardar las tareas pendientes y poder filtrarlas sin llamar a la API
 let currentPendingTasks = [];
 
 export async function loadTasks() {
@@ -11,23 +10,29 @@ export async function loadTasks() {
         ]);
 
         currentPendingTasks = pendingTasks;
-        applyFilterAndRender(); // Renderiza aplicando el filtro actual seleccionado
+        applyFilterAndRender();
         renderHistoryTasks(historyTasks);
     } catch (error) {
         console.error('Error al cargar tareas:', error);
     }
 }
 
-// TICKET 1.3: Nueva función para filtrar y mostrar instantáneamente
 function applyFilterAndRender() {
     const filterSelect = document.getElementById('task-filter');
     const filterValue = filterSelect ? filterSelect.value : 'TODAS';
 
     let filteredTasks = currentPendingTasks;
+    
+    // 1. Filtrar
     if (filterValue !== 'TODAS') {
         filteredTasks = currentPendingTasks.filter(task => task.priority === filterValue);
     }
 
+    // 2. SOLUCIÓN: Ordenar por prioridad en el Frontend (ALTA > MEDIA > BAJA)
+    const priorityValues = { 'ALTA': 1, 'MEDIA': 2, 'BAJA': 3 };
+    filteredTasks.sort((a, b) => priorityValues[a.priority] - priorityValues[b.priority]);
+
+    // 3. Renderizar
     renderPendingTasks(filteredTasks);
 }
 
@@ -37,7 +42,7 @@ function renderPendingTasks(tasks) {
     count.textContent = tasks.length;
 
     if (tasks.length === 0) {
-        list.innerHTML = `<li class="text-gray-400 dark:text-gray-500 text-sm text-center py-4">No hay tareas con este filtro. ¡Buen trabajo! 🎉</li>`;
+        list.innerHTML = `<li class="text-gray-400 dark:text-gray-500 text-sm text-center py-4">No hay tareas. ¡Buen trabajo! 🎉</li>`;
         return;
     }
 
@@ -61,7 +66,6 @@ function renderPendingTasks(tasks) {
         </li>
     `).join('');
 
-    // Agregar evento a los botones de completar
     document.querySelectorAll('.complete-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const taskId = e.target.getAttribute('data-id');
@@ -127,7 +131,6 @@ export function setupTaskForm() {
         });
     }
 
-    // TICKET 1.3: Conectar el selector de filtro con la función de renderizado
     const filterSelect = document.getElementById('task-filter');
     if (filterSelect) {
         filterSelect.addEventListener('change', () => {
